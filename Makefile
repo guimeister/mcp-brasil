@@ -12,7 +12,7 @@ sync: ## Install production dependencies
 	uv sync
 
 dev: ## Install all dependencies (prod + dev)
-	uv sync --extra dev
+	uv sync --group dev
 
 ## —— Quality ——
 

@@ -86,13 +86,17 @@ class TestFeatureRegistry:
         assert registry.features == {}
         assert registry.skipped == {}
 
-    def test_discover_no_features(self) -> None:
-        """Discovery sem nenhuma feature retorna registry vazio."""
+    def test_discover_returns_self_for_chaining(self) -> None:
+        """discover() retorna self para permitir chaining."""
         registry = FeatureRegistry()
-        # Discover on the actual package (no feature dirs exist yet)
         result = registry.discover()
-        assert result is registry  # chaining
-        assert len(registry.features) == 0
+        assert result is registry
+
+    def test_discover_finds_ibge(self) -> None:
+        """Discovery encontra a feature ibge."""
+        registry = FeatureRegistry()
+        registry.discover()
+        assert "ibge" in registry.features
 
     def test_summary_empty(self) -> None:
         registry = FeatureRegistry()
