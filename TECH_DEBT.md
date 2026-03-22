@@ -37,7 +37,7 @@
 ## Câmara Feature
 
 - [x] **Envelope extraction** — API wraps all responses in `{"dados": [...], "links": [...]}`. Handled by `_get()` helper that auto-extracts `dados` field. Tested with empty/missing dados.
-- [ ] **No client-side rate limiting** — API does not document rate limits. No rate limiter applied yet; add if we hit 429s.
+- [x] **No client-side rate limiting** — Resolvido. RateLimiter(60 req/min) aplicado via `_get()`.
 - [ ] **Pagination is server-controlled** — API defaults to 15 items/page. `_pagination_hint()` suggests `pagina=N+1`, but some endpoints may have different defaults. No auto-pagination implemented.
 
 ## Senado Feature
@@ -45,7 +45,7 @@
 - [x] **Deeply nested JSON responses** — API returns structures like `data.ListaParlamentarEmExercicio.Parlamentares.Parlamentar`. Handled by `_deep_get(*keys)` helper with safe navigation.
 - [x] **Single result as dict instead of list** — When only 1 result, API returns `{}` instead of `[{}]`. Handled by `_ensure_list()` coercion in all parsers.
 - [x] **JSON via Accept header** — API requires `Accept: application/json` header. `JSON_HEADERS` constant passed through all requests.
-- [ ] **No client-side rate limiting** — API does not document rate limits. No rate limiter applied yet.
+- [x] **No client-side rate limiting** — Resolvido. RateLimiter(60 req/min) aplicado via `_get()`.
 - [ ] **No pagination support** — Senado API does not use standard pagination. `_pagination_hint()` suggests refining filters when results are large.
 - [ ] **Votação nominal endpoint may vary** — `votos_materia` uses a different URL pattern than other matéria endpoints. Needs real API validation.
 - [ ] **E-Cidadania tools not implemented** — Plan includes 9 web-scraping tools for e-Cidadania. Deferred to future sessions.

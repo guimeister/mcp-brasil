@@ -14,6 +14,7 @@ import logging
 from typing import Any
 
 from mcp_brasil._shared.http_client import http_get
+from mcp_brasil._shared.rate_limiter import RateLimiter
 
 from .constants import (
     DEFAULT_ITENS,
@@ -38,10 +39,14 @@ from .schemas import (
 
 logger = logging.getLogger(__name__)
 
+# Conservative limit — Câmara API does not document rate limits
+_rate_limiter = RateLimiter(max_requests=60, period=60.0)
+
 
 async def _get(url: str, params: dict[str, Any] | None = None) -> Any:
     """GET request extracting the ``dados`` field from the Câmara API envelope."""
-    data = await http_get(url, params=params)
+    async with _rate_limiter:
+        data = await http_get(url, params=params)
     if isinstance(data, dict):
         return data.get("dados", data)
     return data

@@ -36,6 +36,7 @@ import logging
 from typing import Any
 
 from mcp_brasil._shared.http_client import http_get
+from mcp_brasil._shared.rate_limiter import RateLimiter
 
 from .constants import (
     AGENDA_COMISSOES_URL,
@@ -71,6 +72,9 @@ from .schemas import (
 
 logger = logging.getLogger(__name__)
 
+# Conservative limit — Senado API does not document rate limits
+_rate_limiter = RateLimiter(max_requests=60, period=60.0)
+
 
 # --- Helpers ----------------------------------------------------------------
 
@@ -99,7 +103,8 @@ def _ensure_list(val: Any) -> list[Any]:
 
 async def _get(url: str, params: dict[str, Any] | None = None) -> Any:
     """GET request with JSON Accept header for Senado API."""
-    return await http_get(url, params=params, headers=JSON_HEADERS)
+    async with _rate_limiter:
+        return await http_get(url, params=params, headers=JSON_HEADERS)
 
 
 # --- Parsing helpers --------------------------------------------------------
