@@ -12,6 +12,17 @@ Cada agente tem um papel, responsabilidades e checklists claros.
 
 Os ADRs são a fonte de verdade. Nenhuma implementação deve contradizê-los.
 
+**Sempre mantenha o `TECH_DEBT.md` atualizado:**
+- Ao encontrar bug, incompatibilidade, mock, ou implementação parcial → adicione item `[ ]`
+- Ao resolver um débito → marque como `[x]` com nota do que foi feito
+- Ao iniciar trabalho num débito → marque como `[~]`
+- O arquivo é o "TODO interativo" do projeto — se algo não está 100%, registre ali
+
+**Commit após cada mudança testada:**
+- Ao finalizar uma mudança, rode `make ci` para garantir que tudo passa
+- Se verde, faça commit imediatamente usando `/commit -c`
+- Não acumule múltiplas mudanças sem commitar
+
 ---
 
 ## Tech Lead
@@ -46,6 +57,7 @@ Ao revisar uma nova feature ou PR, verificar:
 - [ ] **Docstrings** em todas as tools (usadas pelo LLM)
 - [ ] **Testes** presentes: `test_tools.py`, `test_client.py`
 - [ ] **Commits** seguem Conventional Commits
+- [ ] **TECH_DEBT.md atualizado** — débitos novos registrados, resolvidos marcados `[x]`
 
 ### Referências
 
@@ -103,15 +115,15 @@ class ExemploOutput(BaseModel):
 ```python
 """HTTP client para a API {nome}."""
 
-import httpx
+from mcp_brasil._shared.http_client import create_client
 
 from .constants import {NOME}_API_BASE
 from .schemas import ExemploOutput
 
 
 async def buscar_exemplo(param: str) -> list[ExemploOutput]:
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"{{NOME}_API_BASE}/endpoint", params={"q": param})
+    async with create_client(base_url={NOME}_API_BASE) as client:
+        response = await client.get("/endpoint", params={"q": param})
         response.raise_for_status()
         data = response.json()
         return [ExemploOutput(**item) for item in data]
@@ -272,21 +284,22 @@ async def test_tool_{feature}_via_mcp_client():
 
 Antes de aprovar qualquer PR:
 
-- [ ] **Lint passa:** `just lint` sem erros
-- [ ] **Types passam:** `just types` sem erros
-- [ ] **Testes passam:** `just test` sem falhas
+- [ ] **Lint passa:** `make lint` sem erros
+- [ ] **Types passam:** `make types` sem erros
+- [ ] **Testes passam:** `make test` sem falhas
 - [ ] **Cobertura:** toda tool tem pelo menos 1 teste
 - [ ] **Mock HTTP:** `test_client.py` usa `respx`, nunca faz requisição real
 - [ ] **Sem secrets:** nenhum token ou API key hardcoded
 - [ ] **Docstrings:** todas as tools têm docstring descritiva
 - [ ] **Nomes consistentes:** tools em snake_case com verbo (buscar_, consultar_, listar_)
+- [ ] **TECH_DEBT.md atualizado** — bugs e workarounds encontrados durante QA registrados
 
 ### Comandos
 
 ```bash
-just test                    # Rodar todos os testes
-just test-feature ibge       # Rodar testes de uma feature
-just lint                    # Verificar lint
-just types                   # Verificar types
-just ci                      # Pipeline completa (lint + types + test)
+make test                    # Rodar todos os testes
+make test-feature F=ibge     # Rodar testes de uma feature
+make lint                    # Verificar lint
+make types                   # Verificar types
+make ci                      # Pipeline completa (lint + types + test)
 ```

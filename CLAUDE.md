@@ -9,6 +9,21 @@
 
 Os ADRs são a fonte de verdade para todas as decisões de arquitetura.
 
+## TECH_DEBT.md — Débito técnico interativo
+
+O arquivo `TECH_DEBT.md` é o registro vivo de débitos técnicos do projeto.
+
+**Regra:** Sempre que você encontrar qualquer uma dessas situações, **leia e atualize** `TECH_DEBT.md`:
+
+- Bug encontrado (mesmo que corrigido na hora — registre que existiu)
+- Incompatibilidade com APIs externas (FastMCP, httpx, etc.)
+- Código mockado ou com implementação parcial
+- Funcionalidade prevista no ADR mas ainda não implementada
+- Workaround ou hack temporário
+- TODO ou FIXME no código
+
+**Formato:** Use checkboxes (`[ ]` aberto, `[x]` resolvido) com descrição curta e contexto.
+
 ## Projeto
 
 **mcp-brasil** — MCP servers para APIs públicas brasileiras.
@@ -30,7 +45,7 @@ Pacote Python que conecta AI agents a dados governamentais (IBGE, Banco Central,
 
 ```bash
 make sync           # uv sync (prod only)
-make dev            # uv sync --extra dev (prod + dev)
+make dev            # uv sync --group dev (prod + dev)
 make test           # pytest -v
 make test-feature F=ibge  # pytest tests/ibge/ -v
 make lint           # ruff check + format check
@@ -101,6 +116,8 @@ server.py → tools.py → client.py → schemas.py
 | Privados | `_prefixo` | `_shared/`, `_cache` |
 
 ## Commits
+
+**Regra:** Sempre que finalizar uma mudança e os testes passarem (`make ci` verde), faça commit usando a skill `/commit -c`.
 
 Conventional Commits em português/inglês:
 

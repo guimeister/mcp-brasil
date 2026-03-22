@@ -15,20 +15,20 @@
 
 - [x] **mount() API mismatch** — `feature.py` used `mount("/path", server)` instead of FastMCP v3's `mount(server, namespace=name)`. Fixed.
 - [x] **list_tools() accessed private API** — `_tool_manager._tools` is private FastMCP internals. Removed method to avoid mypy strict failures.
-- [x] **_shared/http_client.py** — Implemented with `create_client()` factory + `http_get()` with retry + exponential backoff + 429/5xx handling.
-- [x] **_shared/formatting.py** — Implemented: `markdown_table`, `format_brl`, `format_number_br`, `format_percent`, `truncate_list`.
-- [x] **settings.py** — Implemented with env var overrides: `HTTP_TIMEOUT`, `HTTP_MAX_RETRIES`, `HTTP_BACKOFF_BASE`, `USER_AGENT`.
+- [x] **_shared/http_client.py** — `create_client()` + `http_get()` with retry + exponential backoff + 429/5xx.
+- [x] **_shared/formatting.py** — `markdown_table`, `format_brl`, `format_number_br`, `format_percent`, `truncate_list`.
+- [x] **_shared/cache.py** — `TTLCache` class + `@ttl_cache(ttl=300)` decorator for async functions.
+- [x] **settings.py** — Env var overrides: `HTTP_TIMEOUT`, `HTTP_MAX_RETRIES`, `HTTP_BACKOFF_BASE`, `USER_AGENT`.
+- [x] **pyproject.toml dependency-groups** — Migrated from `[project.optional-dependencies]` to `[dependency-groups]`. `make dev` uses `uv sync --group dev`.
+- [x] **justfile removed** — Replaced by Makefile.
 
 ## Core — Open
 
-- [ ] **_shared/cache.py not implemented** — LRU cache with TTL mentioned in ADR-001. Planned for Semana 2.
-- [ ] **justfile still exists** — Replaced by Makefile but justfile not removed. Keep or delete?
+- [ ] **Response size limiting for LLM context** — APIs can return huge payloads (e.g., 5000+ municipios). Need a strategy to truncate/summarize responses to avoid blowing LLM context windows. See `_shared/formatting.py:truncate_list` as starting point.
 
 ## Known Limitations
 
 - [ ] **No CONTRIBUTING.md** — Mentioned in roadmap Semana 0 but not yet created.
-- [ ] **No GitHub Actions CI** — `ruff → mypy → pytest` pipeline not configured yet.
-- [ ] **pyproject.toml uses optional-dependencies instead of dependency-groups** — `uv sync --group dev` fails, must use `uv sync --extra dev`.
 
 ---
 
