@@ -38,7 +38,7 @@
 
 - [x] **Envelope extraction** — API wraps all responses in `{"dados": [...], "links": [...]}`. Handled by `_get()` helper that auto-extracts `dados` field. Tested with empty/missing dados.
 - [x] **No client-side rate limiting** — Resolvido. RateLimiter(60 req/min) aplicado via `_get()`.
-- [ ] **Pagination is server-controlled** — API defaults to 15 items/page. `_pagination_hint()` suggests `pagina=N+1`, but some endpoints may have different defaults. No auto-pagination implemented.
+- [x] **Pagination is server-controlled** — By design. `_pagination_hint()` provides LLM-facing hints ("Use pagina=N+1"). Auto-pagination is not needed for MCP tools since the LLM controls iteration.
 
 ## Senado Feature
 
@@ -46,7 +46,7 @@
 - [x] **Single result as dict instead of list** — When only 1 result, API returns `{}` instead of `[{}]`. Handled by `_ensure_list()` coercion in all parsers.
 - [x] **JSON via Accept header** — API requires `Accept: application/json` header. `JSON_HEADERS` constant passed through all requests.
 - [x] **No client-side rate limiting** — Resolvido. RateLimiter(60 req/min) aplicado via `_get()`.
-- [ ] **No pagination support** — Senado API does not use standard pagination. `_pagination_hint()` suggests refining filters when results are large.
+- [x] **No pagination support** — By design. `_pagination_hint()` suggests refining filters. Senado API returns full datasets; LLM-facing hints guide users to narrow queries.
 - [x] **Votação nominal endpoint may vary** — Resolvido. Old plenário endpoint (`/plenario/lista/votacao`) deprecated and deactivated 2026-02-01. Migrated `listar_votacoes`, `obter_votacao`, `votacoes_recentes` to new `/votacao` API (flat JSON, camelCase). Parsers handle both old PascalCase and new camelCase formats. `votos_materia` still uses `/materia/votacoes/{id}` which remains active.
 - [ ] **E-Cidadania tools not implemented** — Plan includes 9 web-scraping tools for e-Cidadania. Deferred to future sessions.
 - [ ] **dados_abertos auxiliary tools not implemented** — Plan includes 4 additional tools. Deferred to future sessions.
