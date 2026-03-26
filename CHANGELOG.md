@@ -2,6 +2,12 @@
 
 Todas as mudanças notáveis do mcp-brasil estão documentadas neste arquivo.
 
+## [0.4.0] - 2026-03-26
+
+### Features
+
+- **tabua_mares:** Add tide table feature with 7 tools, resource, and prompts
+
 ## [0.3.4] - 2026-03-26
 
 ### Features
