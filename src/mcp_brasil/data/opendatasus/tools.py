@@ -13,7 +13,7 @@ from fastmcp import Context
 from mcp_brasil._shared.formatting import markdown_table
 
 from . import client
-from .constants import DATASETS_CONHECIDOS
+from .constants import DATASETS_CONHECIDOS, DATASETS_CONHECIDOS_MAP
 
 
 async def buscar_datasets(
@@ -210,3 +210,117 @@ async def buscar_com_filtro(
         f"**DataStore filtrado** ({campo}={valor}) — {len(records)} registros (total: {total})\n\n"
     )
     return header + markdown_table(cols, rows)
+
+
+async def _consultar_dataset_dedicado(
+    ctx: Context,
+    dataset_slug: str,
+    query: str | None = None,
+    filtros: dict[str, str] | None = None,
+    limite: int = 20,
+) -> str:
+    """Find dataset, pick first resource, and query its DataStore."""
+    info = DATASETS_CONHECIDOS_MAP.get(dataset_slug)
+    titulo = info["titulo"] if info else dataset_slug
+
+    ds = await client.detalhar_dataset(dataset_slug)
+    if not ds or not ds.recursos:
+        return (
+            f"Dataset '{titulo}' não encontrado ou sem recursos DataStore. "
+            "Use buscar_datasets() para verificar a disponibilidade."
+        )
+
+    resource_id = ds.recursos[0].id
+    records, total = await client.consultar_datastore(
+        resource_id=resource_id,
+        query=query,
+        filtros=filtros,
+        limite=limite,
+    )
+
+    if not records:
+        filtro_desc = ""
+        if query:
+            filtro_desc = f" para '{query}'"
+        elif filtros:
+            filtro_desc = f" com filtros {filtros}"
+        return f"Nenhum registro encontrado no dataset {titulo}{filtro_desc}."
+
+    first = records[0].campos
+    cols = list(first.keys())[:8]
+    rows = [tuple(str(r.campos.get(c, "—"))[:40] for c in cols) for r in records[:50]]
+
+    header = f"**{titulo}** — {len(records)} registros (total: {total})\n\n"
+    return header + markdown_table(cols, rows)
+
+
+async def consultar_vacinacao(
+    ctx: Context,
+    uf: str | None = None,
+    municipio: str | None = None,
+    limite: int = 20,
+) -> str:
+    """Consulta dados de vacinação contra Covid-19 no OpenDataSUS.
+
+    Acessa diretamente o dataset de vacinação sem necessidade de buscar o
+    resource_id manualmente. Filtros por UF e município são opcionais.
+
+    Args:
+        uf: Sigla da UF para filtrar (ex: "SP", "RJ"). Opcional.
+        municipio: Nome do município para filtrar. Opcional.
+        limite: Número máximo de registros (padrão: 20).
+
+    Returns:
+        Tabela com registros de vacinação.
+    """
+    filtros: dict[str, str] = {}
+    if uf:
+        filtros["paciente_endereco_uf"] = uf.upper()
+    if municipio:
+        filtros["paciente_endereco_nmMunicipio"] = municipio
+
+    filtro_desc = uf or municipio or ""
+    await ctx.info(f"Consultando vacinação Covid-19 {filtro_desc}...".strip())
+
+    return await _consultar_dataset_dedicado(
+        ctx,
+        dataset_slug="covid-19-vacinacao",
+        filtros=filtros if filtros else None,
+        limite=limite,
+    )
+
+
+async def consultar_srag(
+    ctx: Context,
+    uf: str | None = None,
+    ano: str | None = None,
+    limite: int = 20,
+) -> str:
+    """Consulta dados de SRAG (Síndrome Respiratória Aguda Grave) no OpenDataSUS.
+
+    Acessa diretamente o dataset SRAG sem necessidade de buscar o resource_id
+    manualmente. Permite filtrar por UF e ano epidemiológico.
+
+    Args:
+        uf: Sigla da UF para filtrar (ex: "SP", "RJ"). Opcional.
+        ano: Ano epidemiológico (ex: "2024"). Opcional.
+        limite: Número máximo de registros (padrão: 20).
+
+    Returns:
+        Tabela com registros de SRAG.
+    """
+    filtros: dict[str, str] = {}
+    if uf:
+        filtros["SG_UF_NOT"] = uf.upper()
+    if ano:
+        filtros["NU_ANO"] = ano
+
+    filtro_desc = uf or ano or ""
+    await ctx.info(f"Consultando SRAG {filtro_desc}...".strip())
+
+    return await _consultar_dataset_dedicado(
+        ctx,
+        dataset_slug="srag",
+        filtros=filtros if filtros else None,
+        limite=limite,
+    )

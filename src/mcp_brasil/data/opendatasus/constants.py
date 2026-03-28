@@ -42,6 +42,9 @@ DATASETS_CONHECIDOS: list[dict[str, str]] = [
     },
 ]
 
+# Mapping from slug to dataset info for quick lookup
+DATASETS_CONHECIDOS_MAP: dict[str, dict[str, str]] = {d["nome"]: d for d in DATASETS_CONHECIDOS}
+
 # Common tags used in OpenDataSUS
 TAGS_COMUNS: list[str] = [
     "covid-19",

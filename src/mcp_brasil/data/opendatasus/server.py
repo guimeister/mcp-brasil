@@ -11,18 +11,22 @@ from .tools import (
     buscar_com_filtro,
     buscar_datasets,
     consultar_datastore,
+    consultar_srag,
+    consultar_vacinacao,
     detalhar_dataset,
     listar_datasets_conhecidos,
 )
 
 mcp = FastMCP("mcp-brasil-opendatasus")
 
-# Tools (5)
+# Tools (7)
 mcp.tool(buscar_datasets, tags={"busca", "datasets", "opendatasus"})
 mcp.tool(detalhar_dataset, tags={"consulta", "dataset", "detalhes"})
 mcp.tool(consultar_datastore, tags={"consulta", "datastore", "registros"})
 mcp.tool(listar_datasets_conhecidos, tags={"listagem", "datasets", "referencia"})
 mcp.tool(buscar_com_filtro, tags={"busca", "filtro", "datastore"})
+mcp.tool(consultar_vacinacao, tags={"vacinacao", "covid", "dados"})
+mcp.tool(consultar_srag, tags={"srag", "respiratorio", "epidemiologia"})
 
 # Resources (URIs without namespace prefix — mount adds "opendatasus/" automatically)
 mcp.resource("data://datasets-conhecidos", mime_type="application/json")(datasets_conhecidos)

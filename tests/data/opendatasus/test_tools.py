@@ -166,3 +166,124 @@ class TestBuscarComFiltro:
         ):
             result = await tools.buscar_com_filtro(ctx, "res-uuid", "uf", "XX")
             assert "Nenhum registro" in result
+
+
+# ---------------------------------------------------------------------------
+# consultar_vacinacao
+# ---------------------------------------------------------------------------
+
+
+VACINACAO_DATASET = DatasetOpenDataSUS(
+    id="vac-123",
+    nome="covid-19-vacinacao",
+    titulo="Campanha Nacional de Vacinação contra Covid-19",
+    recursos=[RecursoDataset(id="vac-res-1", nome="vacinacao.csv", formato="CSV")],
+    total_recursos=1,
+)
+
+
+class TestConsultarVacinacao:
+    @pytest.mark.asyncio
+    async def test_returns_data(self, ctx: AsyncMock) -> None:
+        with (
+            patch(
+                f"{CLIENT_MODULE}.detalhar_dataset",
+                new_callable=AsyncMock,
+                return_value=VACINACAO_DATASET,
+            ),
+            patch(
+                f"{CLIENT_MODULE}.consultar_datastore",
+                new_callable=AsyncMock,
+                return_value=([SAMPLE_RECORD], 100),
+            ),
+        ):
+            result = await tools.consultar_vacinacao(ctx, uf="SP")
+            assert "Vacinação" in result
+            assert "SP" in result
+
+    @pytest.mark.asyncio
+    async def test_dataset_not_found(self, ctx: AsyncMock) -> None:
+        with patch(
+            f"{CLIENT_MODULE}.detalhar_dataset",
+            new_callable=AsyncMock,
+            return_value=None,
+        ):
+            result = await tools.consultar_vacinacao(ctx)
+            assert "não encontrado" in result
+
+    @pytest.mark.asyncio
+    async def test_no_records(self, ctx: AsyncMock) -> None:
+        with (
+            patch(
+                f"{CLIENT_MODULE}.detalhar_dataset",
+                new_callable=AsyncMock,
+                return_value=VACINACAO_DATASET,
+            ),
+            patch(
+                f"{CLIENT_MODULE}.consultar_datastore",
+                new_callable=AsyncMock,
+                return_value=([], 0),
+            ),
+        ):
+            result = await tools.consultar_vacinacao(ctx, uf="XX")
+            assert "Nenhum registro" in result
+
+
+# ---------------------------------------------------------------------------
+# consultar_srag
+# ---------------------------------------------------------------------------
+
+
+SRAG_DATASET = DatasetOpenDataSUS(
+    id="srag-123",
+    nome="srag",
+    titulo="SRAG - Síndrome Respiratória Aguda Grave",
+    recursos=[RecursoDataset(id="srag-res-1", nome="srag.csv", formato="CSV")],
+    total_recursos=1,
+)
+
+
+class TestConsultarSrag:
+    @pytest.mark.asyncio
+    async def test_returns_data(self, ctx: AsyncMock) -> None:
+        with (
+            patch(
+                f"{CLIENT_MODULE}.detalhar_dataset",
+                new_callable=AsyncMock,
+                return_value=SRAG_DATASET,
+            ),
+            patch(
+                f"{CLIENT_MODULE}.consultar_datastore",
+                new_callable=AsyncMock,
+                return_value=([SAMPLE_RECORD], 50),
+            ),
+        ):
+            result = await tools.consultar_srag(ctx, uf="RJ")
+            assert "SRAG" in result
+
+    @pytest.mark.asyncio
+    async def test_dataset_not_found(self, ctx: AsyncMock) -> None:
+        with patch(
+            f"{CLIENT_MODULE}.detalhar_dataset",
+            new_callable=AsyncMock,
+            return_value=None,
+        ):
+            result = await tools.consultar_srag(ctx)
+            assert "não encontrado" in result
+
+    @pytest.mark.asyncio
+    async def test_no_records(self, ctx: AsyncMock) -> None:
+        with (
+            patch(
+                f"{CLIENT_MODULE}.detalhar_dataset",
+                new_callable=AsyncMock,
+                return_value=SRAG_DATASET,
+            ),
+            patch(
+                f"{CLIENT_MODULE}.consultar_datastore",
+                new_callable=AsyncMock,
+                return_value=([], 0),
+            ),
+        ):
+            result = await tools.consultar_srag(ctx, ano="2099")
+            assert "Nenhum registro" in result

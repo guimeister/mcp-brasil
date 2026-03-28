@@ -29,10 +29,21 @@ MOCK_DATASET = DatasetOpenDataSUS(
 
 class TestOpenDataSUSIntegration:
     @pytest.mark.asyncio
-    async def test_server_has_5_tools(self, opendatasus_client: Client) -> None:
+    async def test_server_has_7_tools(self, opendatasus_client: Client) -> None:
         async with opendatasus_client:
             tools = await opendatasus_client.list_tools()
-            assert len(tools) == 5
+            names = {t.name for t in tools}
+            expected = {
+                "buscar_datasets",
+                "detalhar_dataset",
+                "consultar_datastore",
+                "listar_datasets_conhecidos",
+                "buscar_com_filtro",
+                "consultar_vacinacao",
+                "consultar_srag",
+            }
+            assert expected.issubset(names), f"Missing: {expected - names}"
+            assert len(tools) == 7
 
     @pytest.mark.asyncio
     async def test_server_has_2_resources(self, opendatasus_client: Client) -> None:
