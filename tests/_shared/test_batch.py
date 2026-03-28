@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -65,18 +66,20 @@ class TestExecuteBatch:
     @pytest.mark.asyncio
     async def test_calls_tool_with_ctx(self) -> None:
         """Should pass ctx to tools that accept it."""
+        calls: list[dict[str, Any]] = []
 
-        async def _spec(ctx: object, param: str) -> str: ...
+        async def tool_with_ctx(ctx: object, param: str) -> str:
+            calls.append({"ctx": ctx, "param": param})
+            return "resultado ok"
 
-        mock_fn = AsyncMock(spec=_spec, return_value="resultado ok")
-        batch._dispatch["test_tool"] = mock_fn
+        batch._dispatch["test_tool"] = tool_with_ctx
 
         ctx = _mock_ctx()
         result = await batch.execute_batch(
             [{"tool": "test_tool", "args": {"param": "value"}}], ctx
         )
         assert "resultado ok" in result
-        mock_fn.assert_called_once()
+        assert len(calls) == 1
 
     @pytest.mark.asyncio
     async def test_calls_tool_without_ctx(self) -> None:
