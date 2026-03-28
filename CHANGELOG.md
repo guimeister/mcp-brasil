@@ -2,6 +2,16 @@
 
 Todas as mudanças notáveis do mcp-brasil estão documentadas neste arquivo.
 
+## [0.6.0] - 2026-03-28
+
+### Bug Fixes
+
+- **batch:** Replace AsyncMock with real function in ctx test
+
+### Features
+
+- **tce_es:** Add TCE-ES integration via dados.es.gov.br CKAN API (#2)
+
 ## [0.5.0] - 2026-03-27
 
 ### Bug Fixes
