@@ -175,3 +175,218 @@ class TestInformacoesBula:
         assert "Contraindicações" in result
         assert "Posologia" in result
         assert "Reações adversas" in result
+
+
+# ---------------------------------------------------------------------------
+# buscar_por_categoria
+# ---------------------------------------------------------------------------
+
+
+class TestBuscarPorCategoria:
+    @pytest.mark.asyncio
+    async def test_formats_table(self) -> None:
+        mock_data = [
+            MedicamentoBulario(
+                nome_produto="Genérico X",
+                principio_ativo="PRINCIPIO X",
+                razao_social="Lab Gen",
+                categoria_regulatoria="Genérico",
+                numero_processo="123/2020",
+            ),
+        ]
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_por_categoria",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.buscar_por_categoria(ctx, categoria="Genérico")
+        assert "Genérico" in result
+        assert "1 resultado" in result
+
+    @pytest.mark.asyncio
+    async def test_empty(self) -> None:
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_por_categoria",
+            new_callable=AsyncMock,
+            return_value=[],
+        ):
+            result = await tools.buscar_por_categoria(ctx, categoria="Inexistente")
+        assert "Nenhum medicamento" in result
+
+
+# ---------------------------------------------------------------------------
+# buscar_genericos
+# ---------------------------------------------------------------------------
+
+
+class TestBuscarGenericos:
+    @pytest.mark.asyncio
+    async def test_formats_table(self) -> None:
+        mock_data = [
+            MedicamentoBulario(
+                nome_produto="Losartana Genérica",
+                principio_ativo="LOSARTANA",
+                razao_social="Lab Gen",
+                numero_registro="1.2345",
+            ),
+        ]
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_generico",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.buscar_genericos(ctx, nome="losartana")
+        assert "Genéricos" in result
+        assert "Losartana" in result
+
+    @pytest.mark.asyncio
+    async def test_empty(self) -> None:
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_generico",
+            new_callable=AsyncMock,
+            return_value=[],
+        ):
+            result = await tools.buscar_genericos(ctx, nome="xyz")
+        assert "Nenhum genérico" in result
+
+
+# ---------------------------------------------------------------------------
+# verificar_registro
+# ---------------------------------------------------------------------------
+
+
+class TestVerificarRegistro:
+    @pytest.mark.asyncio
+    async def test_found(self) -> None:
+        mock_data = [
+            MedicamentoBulario(
+                nome_produto="Dipirona",
+                principio_ativo="DIPIRONA",
+                razao_social="Lab X",
+                categoria_regulatoria="Genérico",
+                numero_registro="1.2345",
+                data_vencimento_registro="2030-01-01",
+                numero_processo="123/2020",
+            ),
+        ]
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_medicamento",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.verificar_registro(ctx, nome="dipirona")
+        assert "Registro ANVISA" in result
+        assert "1.2345" in result
+        assert "Registro ativo" in result
+
+    @pytest.mark.asyncio
+    async def test_not_found(self) -> None:
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_medicamento",
+            new_callable=AsyncMock,
+            return_value=[],
+        ):
+            result = await tools.verificar_registro(ctx, nome="xyz")
+        assert "Nenhum registro" in result
+
+
+# ---------------------------------------------------------------------------
+# buscar_por_empresa
+# ---------------------------------------------------------------------------
+
+
+class TestBuscarPorEmpresa:
+    @pytest.mark.asyncio
+    async def test_formats_table(self) -> None:
+        mock_data = [
+            MedicamentoBulario(
+                nome_produto="Med X",
+                principio_ativo="PRINCIPIO",
+                razao_social="EMS S/A",
+                categoria_regulatoria="Genérico",
+                numero_registro="1.2345",
+            ),
+            MedicamentoBulario(
+                nome_produto="Outro Med",
+                razao_social="Outro Lab",
+            ),
+        ]
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_medicamento",
+            new_callable=AsyncMock,
+            return_value=mock_data,
+        ):
+            result = await tools.buscar_por_empresa(ctx, empresa="EMS")
+        assert "Med X" in result
+        assert "1 resultado" in result
+        # Should NOT contain the other lab's medicine
+        assert "Outro Med" not in result
+
+    @pytest.mark.asyncio
+    async def test_empty(self) -> None:
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_medicamento",
+            new_callable=AsyncMock,
+            return_value=[],
+        ):
+            result = await tools.buscar_por_empresa(ctx, empresa="Inexistente")
+        assert "Nenhum medicamento" in result
+
+
+# ---------------------------------------------------------------------------
+# resumo_regulatorio
+# ---------------------------------------------------------------------------
+
+
+class TestResumoRegulatorio:
+    @pytest.mark.asyncio
+    async def test_formats_summary(self) -> None:
+        mock_med = [
+            MedicamentoBulario(
+                nome_produto="Dipirona",
+                principio_ativo="DIPIRONA",
+                razao_social="Lab X",
+                categoria_regulatoria="Genérico",
+                numero_registro="1.2345",
+                numero_processo="123/2020",
+            ),
+        ]
+        mock_bula = [
+            BulaMedicamento(tipo_bula="PACIENTE"),
+        ]
+        ctx = _mock_ctx()
+        with (
+            patch(
+                f"{CLIENT_MODULE}.buscar_medicamento",
+                new_callable=AsyncMock,
+                return_value=mock_med,
+            ),
+            patch(
+                f"{CLIENT_MODULE}.consultar_bula",
+                new_callable=AsyncMock,
+                return_value=mock_bula,
+            ),
+        ):
+            result = await tools.resumo_regulatorio(ctx, nome="dipirona")
+        assert "Resumo Regulatório" in result
+        assert "Dipirona" in result
+        assert "PACIENTE" in result
+
+    @pytest.mark.asyncio
+    async def test_not_found(self) -> None:
+        ctx = _mock_ctx()
+        with patch(
+            f"{CLIENT_MODULE}.buscar_medicamento",
+            new_callable=AsyncMock,
+            return_value=[],
+        ):
+            result = await tools.resumo_regulatorio(ctx, nome="xyz")
+        assert "Nenhum medicamento" in result

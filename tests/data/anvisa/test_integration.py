@@ -13,7 +13,7 @@ CLIENT_MODULE = "mcp_brasil.data.anvisa.client"
 
 class TestToolsRegistered:
     @pytest.mark.asyncio
-    async def test_all_5_tools_registered(self) -> None:
+    async def test_all_10_tools_registered(self) -> None:
         async with Client(mcp) as c:
             tool_list = await c.list_tools()
             names = {t.name for t in tool_list}
@@ -23,8 +23,14 @@ class TestToolsRegistered:
                 "consultar_bula",
                 "listar_categorias",
                 "informacoes_bula",
+                "buscar_por_categoria",
+                "buscar_genericos",
+                "verificar_registro",
+                "buscar_por_empresa",
+                "resumo_regulatorio",
             }
             assert expected.issubset(names), f"Missing: {expected - names}"
+            assert len(tool_list) == 10
 
     @pytest.mark.asyncio
     async def test_tools_have_docstrings(self) -> None:

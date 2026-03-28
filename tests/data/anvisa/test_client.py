@@ -203,6 +203,87 @@ class TestParseMedicamento:
         assert result.categoria_regulatoria == "Genérico"
 
 
+# ---------------------------------------------------------------------------
+# buscar_por_categoria
+# ---------------------------------------------------------------------------
+
+
+class TestBuscarPorCategoria:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_returns_parsed_results(self) -> None:
+        respx.get(BULARIO_BUSCA_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "content": [
+                        {
+                            "idProduto": "111",
+                            "nomeProduto": "Genérico X",
+                            "categoriaRegulatoria": "Genérico",
+                        }
+                    ]
+                },
+            )
+        )
+        result = await client.buscar_por_categoria(categoria="Genérico")
+        assert len(result) == 1
+        assert result[0].categoria_regulatoria == "Genérico"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_sends_params(self) -> None:
+        route = respx.get(BULARIO_BUSCA_URL).mock(
+            return_value=httpx.Response(200, json={"content": []})
+        )
+        await client.buscar_por_categoria(categoria="Similar", nome="test")
+        req_url = str(route.calls[0].request.url)
+        assert "categoriaRegulatoria=Similar" in req_url
+        assert "nome=test" in req_url
+
+
+# ---------------------------------------------------------------------------
+# buscar_generico
+# ---------------------------------------------------------------------------
+
+
+class TestBuscarGenerico:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_returns_generics(self) -> None:
+        respx.get(BULARIO_BUSCA_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "content": [
+                        {
+                            "idProduto": "222",
+                            "nomeProduto": "Losartana Gen",
+                            "categoriaRegulatoria": "Genérico",
+                        }
+                    ]
+                },
+            )
+        )
+        result = await client.buscar_generico(nome="losartana")
+        assert len(result) == 1
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_sends_generico_filter(self) -> None:
+        route = respx.get(BULARIO_BUSCA_URL).mock(
+            return_value=httpx.Response(200, json={"content": []})
+        )
+        await client.buscar_generico(nome="metformina")
+        req_url = str(route.calls[0].request.url)
+        assert "principioAtivo=metformina" in req_url
+
+
+# ---------------------------------------------------------------------------
+# Parse functions
+# ---------------------------------------------------------------------------
+
+
 class TestParseBula:
     def test_handles_missing_fields(self) -> None:
         result = client._parse_bula({})

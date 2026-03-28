@@ -13,7 +13,7 @@ from fastmcp import Context
 from mcp_brasil._shared.formatting import markdown_table
 
 from . import client
-from .constants import SECOES_BULA
+from .constants import CATEGORIAS_MEDICAMENTO, SECOES_BULA
 
 
 async def buscar_medicamento(
@@ -188,3 +188,234 @@ async def informacoes_bula(ctx: Context) -> str:
         "A bula do profissional tem informações técnicas detalhadas.\n"
         "Use buscar_medicamento() e consultar_bula() para acessar bulas específicas."
     )
+
+
+async def buscar_por_categoria(
+    ctx: Context,
+    categoria: str,
+    nome: str | None = None,
+    pagina: int = 1,
+) -> str:
+    """Busca medicamentos por categoria regulatória no Bulário da ANVISA.
+
+    Categorias disponíveis: Novo, Genérico, Similar, Biológico, Específico,
+    Fitoterápico, Dinamizado, Radiofármaco.
+
+    Args:
+        categoria: Categoria regulatória (ex: "Genérico", "Similar", "Biológico").
+        nome: Nome do medicamento para combinar com a categoria (opcional).
+        pagina: Página de resultados (padrão: 1).
+
+    Returns:
+        Tabela com medicamentos da categoria informada.
+    """
+    await ctx.info(f"Buscando medicamentos da categoria '{categoria}'...")
+
+    resultados = await client.buscar_por_categoria(categoria=categoria, nome=nome, pagina=pagina)
+
+    if not resultados:
+        cats = ", ".join(CATEGORIAS_MEDICAMENTO.values())
+        return (
+            f"Nenhum medicamento encontrado na categoria '{categoria}'. "
+            f"Categorias disponíveis: {cats}."
+        )
+
+    rows = [
+        (
+            m.nome_produto or "—",
+            m.principio_ativo or "—",
+            m.razao_social or "—",
+            m.categoria_regulatoria or "—",
+            m.numero_processo or "—",
+        )
+        for m in resultados
+    ]
+
+    filtro = f" contendo '{nome}'" if nome else ""
+    header = (
+        f"**Medicamentos — Categoria: {categoria}**{filtro} ({len(resultados)} resultado(s))\n\n"
+    )
+    return header + markdown_table(
+        ["Nome", "Princípio Ativo", "Empresa", "Categoria", "Nº Processo"], rows
+    )
+
+
+async def buscar_genericos(
+    ctx: Context,
+    nome: str,
+    pagina: int = 1,
+) -> str:
+    """Busca genéricos equivalentes a um medicamento de referência.
+
+    Dado o nome de um medicamento ou princípio ativo, encontra todas as
+    versões genéricas registradas na ANVISA. Útil para comparar preços
+    e encontrar alternativas mais acessíveis.
+
+    Args:
+        nome: Nome do medicamento de referência ou princípio ativo (ex: "losartana").
+        pagina: Página de resultados (padrão: 1).
+
+    Returns:
+        Tabela com genéricos encontrados.
+    """
+    await ctx.info(f"Buscando genéricos para '{nome}'...")
+
+    resultados = await client.buscar_generico(nome=nome, pagina=pagina)
+
+    if not resultados:
+        return (
+            f"Nenhum genérico encontrado para '{nome}'. "
+            "Tente buscar pelo princípio ativo exato ou verifique "
+            "se o medicamento possui versão genérica registrada."
+        )
+
+    rows = [
+        (
+            m.nome_produto or "—",
+            m.principio_ativo or "—",
+            m.razao_social or "—",
+            m.numero_registro or "—",
+        )
+        for m in resultados
+    ]
+
+    header = f"**Genéricos para '{nome}'** ({len(resultados)} resultado(s))\n\n"
+    return header + markdown_table(["Nome", "Princípio Ativo", "Empresa", "Registro"], rows)
+
+
+async def verificar_registro(
+    ctx: Context,
+    nome: str,
+) -> str:
+    """Verifica se um medicamento possui registro válido na ANVISA.
+
+    Busca no Bulário e retorna informações de registro incluindo número,
+    data de vencimento e categoria regulatória.
+
+    Args:
+        nome: Nome do medicamento a verificar (ex: "dipirona", "cloroquina").
+
+    Returns:
+        Status do registro do medicamento na ANVISA.
+    """
+    await ctx.info(f"Verificando registro de '{nome}' na ANVISA...")
+
+    resultados = await client.buscar_medicamento(nome=nome)
+
+    if not resultados:
+        return (
+            f"Nenhum registro encontrado para '{nome}' no Bulário ANVISA. "
+            "Isso pode significar que o medicamento não está registrado ou "
+            "que o nome está diferente do registro oficial."
+        )
+
+    lines = [f"**Registro ANVISA para '{nome}'** ({len(resultados)} registro(s))\n"]
+
+    for m in resultados:
+        status = "Registro ativo" if m.numero_registro else "Registro não informado"
+        lines.append(f"- **{m.nome_produto or '—'}** ({m.categoria_regulatoria or '—'})")
+        lines.append(f"  - Empresa: {m.razao_social or '—'}")
+        lines.append(f"  - Princípio ativo: {m.principio_ativo or '—'}")
+        lines.append(f"  - Registro: {m.numero_registro or '—'}")
+        lines.append(f"  - Vencimento: {m.data_vencimento_registro or '—'}")
+        lines.append(f"  - Processo: {m.numero_processo or '—'}")
+        lines.append(f"  - Status: **{status}**")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+async def buscar_por_empresa(
+    ctx: Context,
+    empresa: str,
+    pagina: int = 1,
+) -> str:
+    """Busca medicamentos registrados por uma empresa/laboratório específico.
+
+    Pesquisa no Bulário por nome da empresa (razão social) que detém
+    o registro do medicamento na ANVISA.
+
+    Args:
+        empresa: Nome da empresa ou laboratório (ex: "EMS", "Medley", "Eurofarma").
+        pagina: Página de resultados (padrão: 1).
+
+    Returns:
+        Tabela com medicamentos da empresa.
+    """
+    await ctx.info(f"Buscando medicamentos de '{empresa}'...")
+
+    # The Bulário API uses 'nome' for general search - we search and filter by razao_social
+    resultados = await client.buscar_medicamento(nome=empresa, pagina=pagina)
+
+    # Filter results that match the company name
+    empresa_lower = empresa.lower()
+    filtrados = [
+        m for m in resultados if m.razao_social and empresa_lower in m.razao_social.lower()
+    ]
+
+    if not filtrados:
+        return (
+            f"Nenhum medicamento encontrado para a empresa '{empresa}'. "
+            "Tente o nome completo da razão social do laboratório."
+        )
+
+    rows = [
+        (
+            m.nome_produto or "—",
+            m.principio_ativo or "—",
+            m.categoria_regulatoria or "—",
+            m.numero_registro or "—",
+        )
+        for m in filtrados
+    ]
+
+    header = f"**Medicamentos de '{empresa}'** ({len(filtrados)} resultado(s))\n\n"
+    return header + markdown_table(["Nome", "Princípio Ativo", "Categoria", "Registro"], rows)
+
+
+async def resumo_regulatorio(ctx: Context, nome: str) -> str:
+    """Gera um resumo regulatório completo de um medicamento na ANVISA.
+
+    Consolida informações de registro, bulas disponíveis e categoria
+    regulatória em uma visão única.
+
+    Args:
+        nome: Nome do medicamento (ex: "dipirona", "losartana").
+
+    Returns:
+        Resumo com registro, categoria, bulas e empresa.
+    """
+    await ctx.info(f"Gerando resumo regulatório para '{nome}'...")
+
+    resultados = await client.buscar_medicamento(nome=nome)
+
+    if not resultados:
+        return f"Nenhum medicamento '{nome}' encontrado no Bulário ANVISA."
+
+    lines = [f"**Resumo Regulatório — '{nome}'** ({len(resultados)} registro(s))\n"]
+
+    for m in resultados[:5]:  # Limit to 5 for readability
+        lines.append(f"### {m.nome_produto or '—'}")
+        lines.append(f"- **Empresa:** {m.razao_social or '—'}")
+        lines.append(f"- **Princípio ativo:** {m.principio_ativo or '—'}")
+        lines.append(f"- **Categoria:** {m.categoria_regulatoria or '—'}")
+        lines.append(f"- **Registro:** {m.numero_registro or '—'}")
+        lines.append(f"- **Vencimento:** {m.data_vencimento_registro or '—'}")
+        lines.append(f"- **Processo:** {m.numero_processo or '—'}")
+
+        # Try to get bulas
+        if m.numero_processo:
+            try:
+                bulas = await client.consultar_bula(numero_processo=m.numero_processo)
+                if bulas:
+                    tipos = [b.tipo_bula or "—" for b in bulas]
+                    lines.append(f"- **Bulas disponíveis:** {', '.join(tipos)}")
+            except Exception:
+                lines.append("- **Bulas:** Não foi possível consultar")
+
+        lines.append("")
+
+    if len(resultados) > 5:
+        lines.append(f"_... e mais {len(resultados) - 5} registro(s)_")
+
+    return "\n".join(lines)

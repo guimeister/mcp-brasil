@@ -131,6 +131,68 @@ async def consultar_bula(*, numero_processo: str) -> list[BulaMedicamento]:
     return []
 
 
+async def buscar_por_categoria(
+    *,
+    categoria: str,
+    nome: str | None = None,
+    pagina: int = 1,
+    limit: int = DEFAULT_LIMIT,
+) -> list[MedicamentoBulario]:
+    """Search medications by regulatory category in the Bulário.
+
+    API: GET /bulario?categoriaRegulatoria={categoria}&nome={nome}
+
+    Args:
+        categoria: Category name (e.g. "Genérico", "Similar", "Novo").
+        nome: Optional medication name to combine with category.
+        pagina: Page number (1-based).
+        limit: Max results per page.
+    """
+    params: dict[str, Any] = {
+        "categoriaRegulatoria": categoria,
+        "pagina": pagina,
+        "limit": min(limit, MAX_LIMIT),
+    }
+    if nome:
+        params["nome"] = nome
+    data: dict[str, Any] = await http_get(BULARIO_BUSCA_URL, params=params)
+
+    content = data.get("content", [])
+    if isinstance(content, list):
+        return [_parse_medicamento(item) for item in content]
+    return []
+
+
+async def buscar_generico(
+    *,
+    nome: str,
+    pagina: int = 1,
+    limit: int = DEFAULT_LIMIT,
+) -> list[MedicamentoBulario]:
+    """Search generic medications equivalent to a reference drug.
+
+    Uses the Bulário API filtering by 'Genérico' category and active ingredient.
+
+    Args:
+        nome: Reference drug name or active ingredient.
+        pagina: Page number.
+        limit: Max results.
+    """
+    # First search by active ingredient to find generics
+    params: dict[str, Any] = {
+        "principioAtivo": nome,
+        "categoriaRegulatoria": "Genérico",
+        "pagina": pagina,
+        "limit": min(limit, MAX_LIMIT),
+    }
+    data: dict[str, Any] = await http_get(BULARIO_BUSCA_URL, params=params)
+
+    content = data.get("content", [])
+    if isinstance(content, list):
+        return [_parse_medicamento(item) for item in content]
+    return []
+
+
 def listar_categorias() -> list[CategoriaMedicamento]:
     """Return all medication regulatory categories.
 
