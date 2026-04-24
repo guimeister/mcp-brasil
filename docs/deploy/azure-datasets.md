@@ -212,6 +212,42 @@ Total estimado para dev: **R$ 30-50/mês**.
   `scripts/warmup_datasets.py` usando `asyncio.gather` (cuidado com
   memória).
 
+## Datasets recomendados para warmup no Azure
+
+Nem todos os datasets cabem no warmup de boot em Container Apps Consumption
+(limite duro 8GB memory / 8GB ephemeral por container). Recomendação baseada
+em testes de campo:
+
+**Warmup seguro** (baixam + ingerem em <1min, <500MB RAM):
+- `spu_siapa` — 1 source, 220MB → 45MB DuckDB
+- `tse_redes_sociais` — 4 years, 34MB total
+- `tse_fefc` — 2 years, 5MB
+
+**Lazy-load recomendado** (multi-year 5-6 sources, tendem a OOM-kill):
+- `tse_bens` — 6 years, 205MB ZIP total
+- `tse_candidatos` — 6 years, 290MB ZIP total
+- `tse_votacao` — 6 years, 1.6GB ZIP total
+
+Padrão `.env` do Azure recomendado:
+```bash
+MCP_BRASIL_DATASETS=spu_siapa,tse_redes_sociais,tse_fefc
+```
+
+Os datasets lazy entram no primeiro tool call que os usa — o usuário
+paga ~1-5min de latência na primeira query, mas o container não reinicia.
+Para pre-popular via job manual:
+
+```bash
+az containerapp exec -n mcp-brasil -g rg-mcp-brasil \
+  --command "uv run python scripts/warmup_datasets.py --single tse_bens"
+```
+
+O warmup script usa `subprocess.run()` por dataset, então um OOM em um
+subprocess não derruba os outros. **Porém**, Azure Container Apps pode
+matar o container inteiro quando o cgroup memory hit limit (não só o
+processo ofensor) — daí a recomendação de manter datasets pesados
+fora do auto-warmup.
+
 ## Notas técnicas — DuckDB e SMB
 
 DuckDB usa `mmap()` e `fcntl()` para crescer seu arquivo de banco. Essas
