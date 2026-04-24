@@ -137,10 +137,7 @@ async def top_fabricantes(ctx: Context, top: int = 20) -> str:
     rows = await executar_query(DATASET_SPEC, sql)
     if not rows:
         return "Sem dados."
-    body = [
-        ((r.get("fab") or "—")[:40], format_number_br(int(r.get("n") or 0), 0))
-        for r in rows
-    ]
+    body = [((r.get("fab") or "—")[:40], format_number_br(int(r.get("n") or 0), 0)) for r in rows]
     return f"**ANAC RAB — Top {len(rows)} fabricantes**\n\n" + markdown_table(
         ["Fabricante", "Aeronaves"], body
     )
@@ -149,7 +146,7 @@ async def top_fabricantes(ctx: Context, top: int = 20) -> str:
 async def aeronaves_por_uf(ctx: Context) -> str:
     """Distribuição de aeronaves por UF do operador.
 
-    Extrai a UF do campo composto `operadores` (formato `NOME|CNPJ|PCT|UF`).
+    Extrai a UF do campo composto `operadores` (formato `NOME|CNPJ|UF`).
 
     Returns:
         Tabela UF x aeronaves ordenada desc.
@@ -158,7 +155,7 @@ async def aeronaves_por_uf(ctx: Context) -> str:
     sql = (
         "SELECT CASE "
         "  WHEN POSITION('|' IN operadores) > 0 "
-        "  THEN TRIM(SPLIT_PART(operadores, '|', 4)) "
+        "  THEN TRIM(SPLIT_PART(operadores, '|', -1)) "
         "  ELSE NULL END AS uf, "
         "COUNT(*) AS n "
         f'FROM "{DATASET_TABLE}" '
@@ -208,9 +205,7 @@ async def valores_distintos_rab(ctx: Context, coluna: str, top: int = 30) -> str
     rows: list[dict[str, Any]] = await executar_query(DATASET_SPEC, sql)
     if not rows:
         return f"Sem valores em {coluna}."
-    body = [
-        (str(r.get("v") or "(null)"), format_number_br(int(r.get("n") or 0), 0)) for r in rows
-    ]
+    body = [(str(r.get("v") or "(null)"), format_number_br(int(r.get("n") or 0), 0)) for r in rows]
     return f"**ANAC RAB — distintos em `{coluna}`**\n\n" + markdown_table(
         ["Valor", "Ocorrências"], body
     )
