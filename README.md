@@ -4,16 +4,16 @@
 
 # mcp-brasil
 
-**MCP Server para 46 fontes de dados públicas brasileiras**
+**MCP Server para 56 fontes de dados públicas brasileiras**
 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-435 tools · 108 resources · 82 prompts · 46 features · 11 áreas temáticas
+457 tools · 119 resources · 90 prompts · 56 features · 12 áreas temáticas
 
-Conecte AI agents (Claude, GPT, Copilot, etc.) a dados governamentais do Brasil — economia, legislação, transparência, judiciário, eleições, meio ambiente, saúde, segurança pública e mais.
+Conecte AI agents (Claude, GPT, Copilot, etc.) a dados governamentais do Brasil — economia, legislação, transparência, judiciário, eleições, meio ambiente, saúde, educação, segurança pública, fiscal subnacional e mais.
 
-**42 APIs não requerem chave** · 4 usam chaves gratuitas (cadastro em 1 min)
+**52 APIs não requerem chave** · 4 usam chaves gratuitas (cadastro em 1 min)
 
 [Quick Start](#quick-start) · [Fontes de dados](#fontes-de-dados) · [Documentação](#documentação) · [Desenvolvimento](#desenvolvimento)
 
@@ -23,11 +23,11 @@ Conecte AI agents (Claude, GPT, Copilot, etc.) a dados governamentais do Brasil 
 
 ## Features
 
-- **435 tools** em 46 features cobrindo 11 áreas — economia, legislativo, transparência, judiciário, eleitoral, ambiental, saúde, segurança pública, compras públicas, utilidades e mais
-- **Datasets grandes com cache local** — SIAPA (~813k imóveis), TSE 2014-2024 (candidatos, bens, votação, redes sociais, FEFC) — SQL via DuckDB embedded, opt-in via env
+- **457 tools** em 56 features cobrindo 12 áreas — economia, legislativo, transparência, judiciário, eleitoral, ambiental, saúde, educação, segurança pública, compras públicas, fiscal subnacional e mais
+- **Datasets grandes com cache local** — SIAPA (~813k imóveis), TSE 2014-2024 (candidatos, bens, votação, redes sociais, FEFC), ANP preços de combustíveis, INEP Censo Escolar e ENEM — SQL via DuckDB embedded, opt-in via env
 - **Cross-referencing** com `planejar_consulta` — cria planos de execução combinando múltiplas APIs (ex: gastos de um deputado + votações + proposições)
 - **Execução em lote** com `executar_lote` — dispara consultas em paralelo numa única chamada
-- **Smart discovery** — BM25 search transform filtra 435 tools para só mostrar as relevantes ao contexto
+- **Smart discovery** — BM25 search transform filtra 457 tools para só mostrar as relevantes ao contexto
 - **Auto-registry** — adicionar uma feature é criar uma pasta; zero configuração manual
 - **Async everywhere** — httpx async + Pydantic v2 + rate limiting com backoff
 
@@ -155,6 +155,7 @@ Conecte o server e faça perguntas em linguagem natural:
 | `tce_pa` | TCE-PA — Diário Oficial, sessões plenárias, jurisprudência (acórdãos, resoluções, portarias, prejulgados) e conteúdo informativo | 4 |
 | `spu_geo` | SPU GeoPortal — terrenos de marinha, acrescidos, marginais, ilhas federais, praias, manguezais e localização de imóveis da União | 4 |
 | `spu_imoveis` | Imóveis da União (Raio-X APF / Gov360) — busca por órgão, UF, município, regime e agregações institucionais | 4 |
+| `siconfi` | SICONFI/Tesouro Nacional — RREO, RGF, DCA e MSC de municípios/estados (LRF, LC 101) | 7 |
 
 ### Judiciário
 
@@ -198,6 +199,13 @@ Conecte o server e faça perguntas em linguagem natural:
 | `sinesp` | SINESP/MJSP — datasets de segurança pública, sistema penitenciário | 6 |
 | `forum_seguranca` | Fórum Brasileiro de Segurança Pública — publicações, Anuário | 4 |
 
+### Educação
+
+| Feature | Fonte | Tools |
+|---------|-------|:-----:|
+| `inep` | INEP — índices educacionais (IDEB, indicadores) e pesquisas | 4 |
+| `fnde` | FNDE — repasses, merenda escolar, PNATE, transporte | 4 |
+
 ### Compras Públicas
 
 | Feature | Fonte | Tools |
@@ -228,6 +236,9 @@ Primeira carga: minutos (download + ingest); subsequentes: ms.
 | `tse_votacao` | TSE — votos por candidato × município × zona | 2014-2024 | 6 |
 | `tse_redes_sociais` | TSE — URLs Instagram/Facebook/Twitter dos candidatos | 2018-2024 | 4 |
 | `tse_fefc` | TSE — Fundo Eleitoral Especial (distribuição partido × gênero) | 2020, 2024 | 4 |
+| `anp_precos` | ANP — preços semanais de combustíveis (gasolina/etanol, diesel/GNV, GLP) em postos | 2024 integral | 7 |
+| `inep_censo_escolar` | INEP — Censo Escolar da Educação Básica (~180k escolas, infraestrutura, matrículas) | 2023 | 7 |
+| `inep_enem` | INEP — Microdados ENEM (~3,9M inscritos, notas, perfil socioeconômico) | 2023 | 6 |
 
 Ative com:
 ```bash
@@ -247,7 +258,7 @@ Ver [guia de Datasets locais](docs/guide/datasets.md) para detalhes de uso.
 | Portal da Transparência | Opcional | [Cadastro gratuito](https://portaldatransparencia.gov.br/api-de-dados/cadastrar-email) |
 | DataJud/CNJ | Opcional | [Cadastro gratuito](https://datajud-wiki.cnj.jus.br/api-publica/acesso) |
 | Anúncios Eleitorais (Meta) | Opcional | [Meta Ad Library API](https://www.facebook.com/ads/library/api/) |
-| Todas as outras (47) | Nenhuma chave | — |
+| Todas as outras (52) | Nenhuma chave | — |
 
 Configure via variáveis de ambiente ou `.env`:
 
@@ -279,7 +290,7 @@ META_ACCESS_TOKEN=seu-token
 |--------|-----------|
 | [Quick Start](docs/guide/quickstart.md) | Instalação e configuração em 2 minutos |
 | [Arquitetura](docs/concepts/architecture.md) | Como o projeto funciona por dentro |
-| [Catálogo de Features](docs/reference/features.md) | Todas as 46 features e 435 tools |
+| [Catálogo de Features](docs/reference/features.md) | Todas as 56 features e 457 tools |
 | [Datasets locais (DuckDB)](docs/guide/datasets.md) | SIAPA + TSE 2014-2024 via SQL embedded |
 | [Smart Tools](docs/reference/smart-tools.md) | Meta-tools: planner, batch, discovery |
 | [Adicionando Features](docs/guide/adding-features.md) | Guia para contribuir com novas APIs |
@@ -315,7 +326,7 @@ src/mcp_brasil/
 ├── server.py              # Auto-registry (nunca editado manualmente)
 ├── _shared/               # Utilitários compartilhados
 │   └── datasets/          # Infra DuckDB local
-├── data/                  # 43 features — REST passthrough
+├── data/                  # 46 features — REST passthrough
 │   ├── ibge/
 │   │   ├── __init__.py    # FEATURE_META
 │   │   ├── server.py      # FastMCP instance
@@ -325,7 +336,7 @@ src/mcp_brasil/
 │   │   └── constants.py   # URLs, códigos
 │   ├── bacen/
 │   └── ...
-├── datasets/              # 6 features — cache local DuckDB (opt-in via env)
+├── datasets/              # 9 features — cache local DuckDB (opt-in via env)
 │   ├── spu_siapa/         # SIAPA 813k imóveis
 │   ├── tse_candidatos/    # TSE candidatos 2014-2024
 │   └── ...
