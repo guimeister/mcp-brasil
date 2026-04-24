@@ -2,6 +2,23 @@
 
 Todas as mudanças notáveis do mcp-brasil estão documentadas neste arquivo.
 
+## [0.14.0] - 2026-04-24
+
+### Bug Fixes
+
+- **spu_siapa:** Accent-insensitive filters + real categorical values + valores_distintos tool
+
+### Documentation
+
+- **datasets:** Add SIAPA smoke-test report (20 real queries)
+- Refresh counters + add datasets guide
+
+### Features
+
+- **datasets:** ADR-004 local DuckDB cache infrastructure + spu_siapa
+- **tse_candidatos, tse_bens:** Electoral datasets via DuckDB + cross-DB joins
+- **tse:** Multi-year TSE datasets (2014-2024) + redes sociais + FEFC
+
 ## [0.13.0] - 2026-04-24
 
 ### Documentation
