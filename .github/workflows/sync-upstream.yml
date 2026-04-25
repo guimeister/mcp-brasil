@@ -1,0 +1,57 @@
+name: Sync from Upstream
+
+on:
+  schedule:
+    # Roda todo dia às 06:00 UTC (03:00 horário de Brasília)
+    - cron: "0 6 * * *"
+  workflow_dispatch: # também permite sync manual pelo GitHub UI
+
+jobs:
+  sync:
+    name: Sync fork with upstream
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      # ── 1. Checkout do fork ────────────────────────────────────────────────
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      # ── 2. Configurar git ──────────────────────────────────────────────────
+      - name: Configure git identity
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # ── 3. Adicionar upstream e fazer o sync ───────────────────────────────
+      - name: Fetch and merge upstream/main
+        run: |
+          git remote add upstream https://github.com/gabrielcarvalhodev/mcp-brasil.git || true
+          git fetch upstream
+
+          # Verifica se há novidades no upstream
+          LOCAL=$(git rev-parse HEAD)
+          REMOTE=$(git rev-parse upstream/main)
+
+          if [ "$LOCAL" = "$REMOTE" ]; then
+            echo "✅ Fork já está sincronizado com o upstream. Nada a fazer."
+            exit 0
+          fi
+
+          echo "🔄 Novas atualizações detectadas no upstream — sincronizando..."
+          git merge upstream/main --no-edit
+
+          git push origin main
+          echo "✅ Fork sincronizado com sucesso!"
+
+      # ── 4. Disparar o deploy se houve mudanças ─────────────────────────────
+      # O push acima já vai acionar o workflow deploy.yml automaticamente
+      # (ele escuta push na branch main). Este step é apenas informativo.
+      - name: Summary
+        run: |
+          echo "O workflow deploy.yml será acionado automaticamente pelo push."
+          echo "Acompanhe o deploy em: ${{ github.server_url }}/${{ github.repository }}/actions"

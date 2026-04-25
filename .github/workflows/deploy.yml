@@ -1,0 +1,107 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # permite rodar manualmente pelo GitHub UI
+
+env:
+  IMAGE_NAME: mcp-brasil
+  SERVICE_NAME: mcp-brasil
+  PORT: 8061
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # necessário para Workload Identity Federation (alternativa ao JSON key)
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── 2. Autenticar no Google Cloud ─────────────────────────────────────
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # ── 3. Configurar gcloud CLI ───────────────────────────────────────────
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      # ── 4. Autenticar Docker no Artifact Registry ──────────────────────────
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
+
+      # ── 5. Construir e publicar a imagem ───────────────────────────────────
+      - name: Build and push Docker image
+        run: |
+          IMAGE_TAG="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/mcp-brasil/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          IMAGE_LATEST="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/mcp-brasil/${{ env.IMAGE_NAME }}:latest"
+
+          docker build -t "$IMAGE_TAG" -t "$IMAGE_LATEST" .
+          docker push "$IMAGE_TAG"
+          docker push "$IMAGE_LATEST"
+
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      # ── 6. Deploy no Cloud Run ─────────────────────────────────────────────
+      - name: Deploy to Cloud Run
+        run: |
+          # Monta a string de env vars apenas para as keys que estiverem definidas
+          ENV_VARS="PORT=${{ env.PORT }}"
+
+          if [ -n "${{ secrets.MCP_BRASIL_API_TOKEN }}" ]; then
+            ENV_VARS="$ENV_VARS,MCP_BRASIL_API_TOKEN=${{ secrets.MCP_BRASIL_API_TOKEN }}"
+          fi
+
+          if [ -n "${{ secrets.TRANSPARENCIA_API_KEY }}" ]; then
+            ENV_VARS="$ENV_VARS,TRANSPARENCIA_API_KEY=${{ secrets.TRANSPARENCIA_API_KEY }}"
+          fi
+
+          if [ -n "${{ secrets.DATAJUD_API_KEY }}" ]; then
+            ENV_VARS="$ENV_VARS,DATAJUD_API_KEY=${{ secrets.DATAJUD_API_KEY }}"
+          fi
+
+          if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            ENV_VARS="$ENV_VARS,ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}"
+          fi
+
+          if [ -n "${{ secrets.BRAPI_TOKEN }}" ]; then
+            ENV_VARS="$ENV_VARS,BRAPI_TOKEN=${{ secrets.BRAPI_TOKEN }}"
+          fi
+
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image "${{ env.IMAGE_TAG }}" \
+            --platform managed \
+            --region "${{ secrets.GCP_REGION }}" \
+            --port ${{ env.PORT }} \
+            --allow-unauthenticated \
+            --memory 512Mi \
+            --cpu 1 \
+            --min-instances 0 \
+            --max-instances 3 \
+            --set-env-vars "$ENV_VARS" \
+            --quiet
+
+      # ── 7. Exibir URL pública ──────────────────────────────────────────────
+      - name: Show service URL
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region "${{ secrets.GCP_REGION }}" \
+            --format "value(status.url)")
+          echo ""
+          echo "═══════════════════════════════════════════"
+          echo "✅  MCP Brasil rodando em:"
+          echo "    $URL"
+          echo ""
+          echo "    Cole essa URL no Claude.ai:"
+          echo "    Settings → Integrations → Add custom connector"
+          echo "═══════════════════════════════════════════"
