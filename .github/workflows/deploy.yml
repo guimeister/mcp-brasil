@@ -57,11 +57,15 @@ jobs:
 
           # Monta a string de env vars apenas para as keys que estiverem definidas
           ENV_VARS=""
-          [ -n "${{ secrets.MCP_BRASIL_API_TOKEN }}" ]  && ENV_VARS="$ENV_VARS,MCP_BRASIL_API_TOKEN=${{ secrets.MCP_BRASIL_API_TOKEN }}"
+          [ -n "${{ secrets.MCP_BRASIL_API_TOKEN }}" ]    && ENV_VARS="$ENV_VARS,MCP_BRASIL_API_TOKEN=${{ secrets.MCP_BRASIL_API_TOKEN }}"
           [ -n "${{ secrets.TRANSPARENCIA_API_KEY }}" ]  && ENV_VARS="$ENV_VARS,TRANSPARENCIA_API_KEY=${{ secrets.TRANSPARENCIA_API_KEY }}"
           [ -n "${{ secrets.DATAJUD_API_KEY }}" ]        && ENV_VARS="$ENV_VARS,DATAJUD_API_KEY=${{ secrets.DATAJUD_API_KEY }}"
           [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]      && ENV_VARS="$ENV_VARS,ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}"
           [ -n "${{ secrets.BRAPI_TOKEN }}" ]            && ENV_VARS="$ENV_VARS,BRAPI_TOKEN=${{ secrets.BRAPI_TOKEN }}"
+          [ -n "${{ secrets.GOOGLE_CLIENT_ID }}" ]       && ENV_VARS="$ENV_VARS,GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}"
+          [ -n "${{ secrets.GOOGLE_CLIENT_SECRET }}" ]   && ENV_VARS="$ENV_VARS,GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}"
+          [ -n "${{ secrets.MCP_BRASIL_BASE_URL }}" ]    && ENV_VARS="$ENV_VARS,MCP_BRASIL_BASE_URL=${{ secrets.MCP_BRASIL_BASE_URL }}"
+          ENV_VARS="$ENV_VARS,MCP_BRASIL_AUTH_MODE=oauth,MCP_BRASIL_OAUTH_PROVIDER=google"
           ENV_VARS="${ENV_VARS#,}"  # remove leading comma
 
           gcloud run deploy ${{ env.SERVICE_NAME }} \
