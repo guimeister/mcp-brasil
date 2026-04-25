@@ -65,7 +65,7 @@ jobs:
           [ -n "${{ secrets.GOOGLE_CLIENT_ID }}" ]       && ENV_VARS="$ENV_VARS,GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}"
           [ -n "${{ secrets.GOOGLE_CLIENT_SECRET }}" ]   && ENV_VARS="$ENV_VARS,GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}"
           [ -n "${{ secrets.MCP_BRASIL_BASE_URL }}" ]    && ENV_VARS="$ENV_VARS,MCP_BRASIL_BASE_URL=${{ secrets.MCP_BRASIL_BASE_URL }}"
-          ENV_VARS="$ENV_VARS,MCP_BRASIL_AUTH_MODE=oauth,MCP_BRASIL_OAUTH_PROVIDER=google"
+          ENV_VARS="$ENV_VARS,MCP_BRASIL_AUTH_MODE=none"
           ENV_VARS="${ENV_VARS#,}"  # remove leading comma
 
           gcloud run deploy ${{ env.SERVICE_NAME }} \
@@ -76,7 +76,7 @@ jobs:
             --allow-unauthenticated \
             --memory 512Mi \
             --cpu 1 \
-            --min-instances 0 \
+            --min-instances 1 \
             --max-instances 3 \
             ${ENV_VARS:+--set-env-vars "$ENV_VARS"} \
             --quiet

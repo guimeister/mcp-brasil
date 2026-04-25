@@ -20,13 +20,11 @@ Fork de [gabrielcarvalhodev/mcp-brasil](https://github.com/gabrielcarvalhodev/mc
 
 ## Autenticação
 
-**Modo:** Google OAuth (`MCP_BRASIL_AUTH_MODE=oauth`)
+**Modo:** Sem autenticação (`MCP_BRASIL_AUTH_MODE=none`)
 
-**OAuth Client:** `MCP Brasil Claude` no projeto GCP  
-**Redirect URI registrada:** `https://mcp-brasil-947444474262.southamerica-east1.run.app/auth/callback`
+A URL tem 50+ caracteres aleatórios e não é indexada. Como todas as APIs acessadas são públicas, o risco é baixo para uso pessoal.
 
-Para rever/editar as credenciais OAuth:  
-`https://console.cloud.google.com/apis/credentials?project=mcp-brasil-56555`
+> **Nota sobre OAuth:** Google OAuth foi testado mas é incompatível com Cloud Run serverless — o FastMCP armazena tokens na memória, que são perdidos ao reiniciar o container, forçando re-autenticação a cada cold start. O callback correto do FastMCP é `/auth/callback` (não `/oauth/callback`). As credenciais OAuth estão nos GitHub Secrets caso queira reativar no futuro.
 
 ---
 
